@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Currency;
+use Illuminate\Database\Eloquent\Collection;
 
 class CurrencyRepository implements CurrencyRepositoryInterface
 {
@@ -13,17 +14,17 @@ class CurrencyRepository implements CurrencyRepositoryInterface
         $this->model = $currency;
     }
 
-    public function get()
+    public function get(): Collection
     {
         return $this->model->all();
     }
 
-    public function find($id)
+    public function find(int $id): ?Currency
     {
         return $this->model->find($id);
     }
 
-    public function create($currency)
+    public function create(string $currency): Currency
     {
         return $this->model->create([
             'currency' => $currency,
@@ -32,19 +33,19 @@ class CurrencyRepository implements CurrencyRepositoryInterface
         ]);
     }
 
-    public function update($id, $currency)
+    public function update(int $id, string $currency): bool
     {
         return $this->model->where('id', $id)
             ->update(['currency' => $currency]);
     }
 
-    public function delete($id)
+    public function delete(int $id): bool
     {
         return $this->model->where('id', $id)
             ->delete();
     }
 
-    public function findByCurrency($currency)
+    public function findByCurrency(string $currency): ?Currency
     {
         return $this->model->where('currency', $currency)
             ->first();

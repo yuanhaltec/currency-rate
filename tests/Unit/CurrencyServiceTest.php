@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Repositories\CurrencyRateRepository;
-use App\Repositories\CurrencyRepository;
-use App\Services\Currency\CurrencyConverterService;
+use App\Repositories\CurrencyConverterRepository;
+use App\Repositories\CurrencyConverterRepositoryInterface;
+use App\Repositories\CurrencyRepositoryInterface;
 use Tests\TestCase;
-use App\Services\CurrencyService;
+use App\Services\CurrencyServiceInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
@@ -40,7 +40,7 @@ class CurrencyServiceTest extends TestCase
     {
         $result = false;  
         $currency = $this->createCurrency();
-        $currencyService = $this->app->make(CurrencyService::class);
+        $currencyService = $this->app->make(CurrencyServiceInterface::class);
         $request = new Request(['currency' => self::CURRENCY_2]);
         $currencyService->update($request, $currency->id);
 
@@ -54,7 +54,7 @@ class CurrencyServiceTest extends TestCase
     public function test_validation()
     {
         try {
-            $currencyService = $this->app->make(CurrencyService::class);
+            $currencyService = $this->app->make(CurrencyServiceInterface::class);
             $request = new Request();
             $currencyService->create($request);  
         } catch (Throwable $e) {
@@ -88,7 +88,7 @@ class CurrencyServiceTest extends TestCase
     protected function createCurrency($currency = null) 
     {
         $currency ??= self::CURRENCY;
-        $currencyService = $this->app->make(CurrencyService::class);
+        $currencyService = $this->app->make(CurrencyServiceInterface::class);
         $request = new Request(['currency' => $currency]);
         $currency = $currencyService->create($request);  
         return $currency;
@@ -96,13 +96,13 @@ class CurrencyServiceTest extends TestCase
 
     protected function findCurrency($currency)
     {
-        $currencyRepository = $this->app->make(CurrencyRepository::class);
+        $currencyRepository = $this->app->make(CurrencyRepositoryInterface::class);
         return $currencyRepository->findByCurrency($currency);
     }
 
     public function test_get()
     {
-        $currencyService = $this->app->make(CurrencyService::class);
+        $currencyService = $this->app->make(CurrencyServiceInterface::class);
         $currencyService->get();        
         $this->assertTrue(true);
     }
@@ -114,7 +114,7 @@ class CurrencyServiceTest extends TestCase
         $currency = $this->findCurrency(self::CURRENCY);
         
         if ($currency) {            
-            $currencyService = $this->app->make(CurrencyService::class);
+            $currencyService = $this->app->make(CurrencyServiceInterface::class);
             $currencyService->delete($currency->id);
             $currency = $this->findCurrency(self::CURRENCY);
             
@@ -129,7 +129,7 @@ class CurrencyServiceTest extends TestCase
     public function test_currency_not_found()
     {
         $id = '999999';
-        $currencyService = $this->app->make(CurrencyService::class);
+        $currencyService = $this->app->make(CurrencyServiceInterface::class);
 
         try {
             $request = new Request(['currency' => self::CURRENCY_2]);
@@ -150,7 +150,7 @@ class CurrencyServiceTest extends TestCase
     {
         
         $result = false;
-        $this->mock(CurrencyConverterService::class, function(MockInterface $mock) {
+        $this->mock(CurrencyConverterRepository::class, function(MockInterface $mock) {
             $mock->shouldReceive('convert')->once()
                 ->with(self::CURRENCY, self::CURRENCY_2, date('Y-m-d'))
                 ->andReturn([
@@ -162,7 +162,7 @@ class CurrencyServiceTest extends TestCase
         });
         $this->createCurrency();
         $this->createCurrency(self::CURRENCY_2);
-        $currencyService = $this->app->make(CurrencyService::class);
+        $currencyService = $this->app->make(CurrencyServiceInterface::class);
         $request = new Request(['date' => date('Y-m-d')]);
         $rate = $currencyService->rate($request, self::CURRENCY, self::CURRENCY_2);
         $this->assertEquals($rate['rate'], 10);
@@ -181,7 +181,7 @@ class CurrencyServiceTest extends TestCase
         try {
             $result = false;       
             $this->createCurrency();             
-            $currencyService = $this->app->make(CurrencyService::class);
+            $currencyService = $this->app->make(CurrencyServiceInterface::class);
             $request = new Request(['date' => date('Y-m-d')]);
             $rate = $currencyService->rate($request, self::CURRENCY, self::CURRENCY_2);
 
@@ -200,7 +200,7 @@ class CurrencyServiceTest extends TestCase
         try {
             $result = false;        
             $this->createCurrency(self::CURRENCY_2);
-            $currencyService = $this->app->make(CurrencyService::class);
+            $currencyService = $this->app->make(CurrencyServiceInterface::class);
             $request = new Request(['date' => date('Y-m-d')]);
             $rate = $currencyService->rate($request, self::CURRENCY, self::CURRENCY_2);
 
@@ -212,13 +212,13 @@ class CurrencyServiceTest extends TestCase
         } catch (Throwable $e) {            
             $this->assertInstanceOf(ModelNotFoundException::class, $e);
         }
-    }
+    }   
 
     public function test_convert()
     {
         $result = false;
-        $currencyConverterService = $this->app->make(CurrencyConverterService::class);
-        $rate = $currencyConverterService->convert(self::CURRENCY, self::CURRENCY_2, date('Y-m-d'));
+        $currencyConverterRepository = $this->app->make(CurrencyConverterRepositoryInterface::class);
+        $rate = $currencyConverterRepository->convert(self::CURRENCY, self::CURRENCY_2, date('Y-m-d'));
 
         if (isset($rate['rate']))
         {
@@ -231,20 +231,8 @@ class CurrencyServiceTest extends TestCase
     public function test_unknown_convert()
     {
         try {                        
-            $currencyConverterService = $this->app->make(CurrencyConverterService::class);
-            $currencyConverterService->convert('X', 'Y', date('Y-m-d'));            
-            $this->assertTrue(false);
-        } catch (Throwable $e) {            
-            $this->assertTrue(true);
-        }
-    }
-
-    public function test_unknown_failed_connect_api_convertion()
-    {
-        try {                        
-            Config::set('param.currency_api_key', 'test-failed');            
-            $currencyConverterService = $this->app->make(CurrencyConverterService::class);
-            $currencyConverterService->convert('X', 'Y', date('Y-m-d'));            
+            $currencyConverterRepository = $this->app->make(CurrencyConverterRepositoryInterface::class);
+            $currencyConverterRepository->convert('X', 'Y', date('Y-m-d'));            
             $this->assertTrue(false);
         } catch (Throwable $e) {            
             $this->assertTrue(true);

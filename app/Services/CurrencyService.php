@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Currency;
-use App\Repositories\CurrencyRepository;
-use App\Repositories\CurrencyRateRepository;
+use App\Models\CurrencyRate;
+use App\Repositories\CurrencyRateRepositoryInterface;
+use App\Repositories\CurrencyRepositoryInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -17,26 +19,26 @@ class CurrencyService implements CurrencyServiceInterface
     protected $currencyRateRepository;
 
     public function __construct(
-        CurrencyRepository $currencyRepository,
-        CurrencyRateRepository $currencyRateRepository
+        CurrencyRepositoryInterface $currencyRepository,
+        CurrencyRateRepositoryInterface $currencyRateRepository
     )
     {
         $this->currencyRepository = $currencyRepository;
         $this->currencyRateRepository = $currencyRateRepository;
     }
 
-    public function get()
+    public function get(): Collection
     {
         return $this->currencyRepository->get();
     }
 
-    public function create(Request $request)
+    public function create(Request $request): Currency
     {
         $this->validation($request);
         return $this->currencyRepository->create($request->currency);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $id): bool
     {
         $currency = $this->currencyRepository->find($id);
 
@@ -48,7 +50,7 @@ class CurrencyService implements CurrencyServiceInterface
         return $this->currencyRepository->update($id, $request->currency);
     }
 
-    public function delete($id)
+    public function delete($id): bool
     {        
         $currency = $this->currencyRepository->find($id);
 
@@ -59,7 +61,7 @@ class CurrencyService implements CurrencyServiceInterface
         return $this->currencyRepository->delete($id);
     }
 
-    public function rate(Request $request, $from, $to)
+    public function rate(Request $request, $from, $to): CurrencyRate
     {
         $date = $request->get('date') ?? date('Y-m-d');
         $from = strtoupper($from);
@@ -68,8 +70,7 @@ class CurrencyService implements CurrencyServiceInterface
         return $rate;
     }
 
-    protected function validation(Request $request, ?Currency $currency = null) {
-
+    protected function validation(Request $request, ?Currency $currency = null): bool {
         if ($currency) {
             $validator = Validator::make($request->all(), [
                 'currency' => [
@@ -86,6 +87,7 @@ class CurrencyService implements CurrencyServiceInterface
         if ($validator->fails()) {            
             throw new ValidationException($validator);
         }
+
         return true;
     }
 }

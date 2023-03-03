@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 class ApiController extends Controller
 {
@@ -14,7 +15,7 @@ class ApiController extends Controller
         $message ??= 'Success retrieve data';
         $response['message'] = $message;
 
-        if (is_array($data)) {
+        if (is_object($data) || is_array($data)) {
             $response['data'] = $data;
         } else {
             $response['message'] = $data;   
@@ -31,10 +32,10 @@ class ApiController extends Controller
         return response($response, $code);
     }
 
-    protected function exceptionResponse($e, $code = 500) {
+    protected function exceptionResponse($e, $code = Response::HTTP_INTERNAL_SERVER_ERROR) {
 
         if ($e instanceof ValidationException) {
-            $code = Response::HTTP_BAD_REQUEST;
+            $code = Response::HTTP_UNPROCESSABLE_ENTITY;
             $response = [
                 'message' => 'Invalid input',
                 'validation' => $e->errors()
@@ -44,6 +45,11 @@ class ApiController extends Controller
             $response = [
                 'message' => $e->getMessage()
             ];
+        } elseif ($e instanceof UnprocessableEntityHttpException) {
+            $code = Response::HTTP_UNPROCESSABLE_ENTITY;
+            $response = [
+                'message' => $e->getMessage()
+            ];            
         } else {
             $response = [
                 'message' => $e->getMessage()                

@@ -4,10 +4,14 @@ namespace App\Providers;
 
 use App\Models\Currency;
 use App\Models\CurrencyRate;
+use App\Repositories\CurrencyConverterRepository;
+use App\Repositories\CurrencyConverterRepositoryInterface;
 use App\Repositories\CurrencyRateRepository;
+use App\Repositories\CurrencyRateRepositoryInterface;
 use App\Repositories\CurrencyRepository;
-use App\Services\Currency\CurrencyConverterService;
+use App\Repositories\CurrencyRepositoryInterface;
 use App\Services\CurrencyService;
+use App\Services\CurrencyServiceInterface;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,23 +23,27 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->singleton(CurrencyRepository::class, function ($app) {
+        $this->app->singleton(CurrencyRepositoryInterface::class, function ($app) {
             return new CurrencyRepository($app->make(Currency::class));
         });
 
-        $this->app->singleton(CurrencyRateRepository::class, function ($app) {
+        $this->app->singleton(CurrencyRateRepositoryInterface::class, function ($app) {
             return new CurrencyRateRepository(
                 $app->make(CurrencyRate::class),
                 $app->make(CurrencyRepository::class),
-                $app->make(CurrencyConverterService::class)
+                $app->make(CurrencyConverterRepository::class)
             );
         });
 
-        $this->app->singleton(CurrencyService::class, function ($app){
+        $this->app->singleton(CurrencyServiceInterface::class, function ($app) {
             return new CurrencyService(
-                $app->make(CurrencyRepository::class),
-                $app->make(CurrencyRateRepository::class),
+                $app->make(CurrencyRepositoryInterface::class),
+                $app->make(CurrencyRateRepositoryInterface::class),
             );
+        });
+        
+        $this->app->singleton(CurrencyConverterRepositoryInterface::class, function($app) {
+            return new CurrencyConverterRepository;
         });
     }
 

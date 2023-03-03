@@ -3,27 +3,26 @@
 namespace App\Repositories;
 
 use App\Models\CurrencyRate;
-use App\Services\Currency\CurrencyConverterService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CurrencyRateRepository implements CurrencyRateRepositoryInterface
 {
     protected $model;
     protected $currencyRepository;
-    protected $currencyConverterService;
+    protected $currencyConverterRepository;
 
     public function __construct(
         CurrencyRate $currencyRate,
-        CurrencyRepository $currencyRepository,
-        CurrencyConverterService $currencyConverterService
+        CurrencyRepositoryInterface $currencyRepository,
+        currencyConverterRepositoryInterface $currencyConverterRepository
     )
     {
         $this->model = $currencyRate;
         $this->currencyRepository = $currencyRepository;
-        $this->currencyConverterService = $currencyConverterService;
+        $this->currencyConverterRepository = $currencyConverterRepository;
     }
 
-    public function rate($from, $to, $date)
+    public function rate(string $from, string $to, string $date): CurrencyRate
     {
         $fromCurrency = $this->currencyRepository->findByCurrency($from);
 
@@ -43,7 +42,7 @@ class CurrencyRateRepository implements CurrencyRateRepositoryInterface
             return $rate;
         }
 
-        $result = $this->currencyConverterService->convert($fromCurrency->currency, $toCurrency->currency, $date);
+        $result = $this->currencyConverterRepository->convert($fromCurrency->currency, $toCurrency->currency, $date);
         $this->create([
             'date' => $date,
             'from_id' => $fromCurrency->id,
@@ -56,7 +55,7 @@ class CurrencyRateRepository implements CurrencyRateRepositoryInterface
         return $this->findRate($fromCurrency->id, $toCurrency->id, $date);
     }
 
-    public function findRate($from, $to, $date)
+    public function findRate(int $from, int $to, string $date): ?CurrencyRate
     {
         return $this->model->where('from_id', $from)
             ->where('to_id', $to)
@@ -64,7 +63,7 @@ class CurrencyRateRepository implements CurrencyRateRepositoryInterface
             ->first();
     }
 
-    public function create($rate) {        
+    public function create(array $rate): CurrencyRate {        
         return $this->model->create($rate);
     }
 }
